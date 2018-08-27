@@ -71,14 +71,15 @@ class Plotter(object):
             else:
                 opts['xlabel'] = 'Time (s)' if time_idx else 'Index'
 
-            if 'legend' not in opts and tag:
-                opts['legend'] = [tag]
+            # if 'legend' not in opts and tag:
+            #     opts['legend'] = [tag]
             if 'title' not in opts:
                 opts['title'] = name
-            self.windows[name] = self.viz.line(Y=y, X=x, opts=opts)
+            self.windows[name] = self.viz.line(Y=y, X=x, name=tag, opts=opts)
             return True
         else:
             return bool(self.viz.line(Y=y, X=x, name=tag,
+                                      opts=self.windows_opts[name],
                                       win=self.windows[name],
                                       update='append'))
 
