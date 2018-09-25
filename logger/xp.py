@@ -7,9 +7,11 @@ import fnmatch
 from builtins import dict
 from collections import defaultdict, OrderedDict
 
+from torchnet import meter
+
 from .plotter import Plotter
-from .metrics import TimeMetric_, AvgMetric_, SumMetric_, ParentWrapper_,\
-    SimpleMetric_, BestMetric_, DynamicMetric_
+from .metrics import TimeMetric_, AvgMetric_, SumMetric_, ParentWrapper_, \
+    SimpleMetric_, BestMetric_, DynamicMetric_, ConfusionMeter_, AverageValueMeter_
 
 # pickle for python 2 / 3
 if sys.version_info[0] == 2:
@@ -75,6 +77,17 @@ class Experiment(object):
 
     def DynamicMetric(self, name, tag="default", fun=None, time_idx=None, to_plot=True):
         return self.NewMetric_(name, tag, DynamicMetric_, time_idx, to_plot, fun=fun)
+
+    ### TorchNet Meters Start
+    def AverageValueMeter(self, name, tag="default", with_std=False, time_idx=None, to_plot=True):
+        return self.NewMetric_(name, tag, AverageValueMeter_, time_idx, to_plot, with_std=with_std)
+
+    def ConfusionMeter(self, name, tag="default", n_classes=-1, normalized=False, column_labels=None, time_idx=None,
+                       to_plot=True):
+        return self.NewMetric_(name, tag, ConfusionMeter_, time_idx, to_plot, n_classes=n_classes,
+                               normalized=normalized, column_labels=column_labels)
+
+    ### TorchNet Meters End
 
     def ParentWrapper(self, name, tag="default", children=()):
 
@@ -186,7 +199,7 @@ class Experiment(object):
     def get_metric(self, name, tag="default"):
 
         assert tag in list(self.metrics.keys()) \
-            and name in list(self.metrics[tag].keys()), \
+               and name in list(self.metrics[tag].keys()), \
             "could not find metric with tag {} and name {}".format(tag, name)
 
         return self.metrics[tag][name]

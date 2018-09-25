@@ -1,6 +1,7 @@
 import numpy as np
 
 from future.utils import viewitems
+from torchnet import meter
 
 from .index import TimeIndex_, ValueIndex_
 from .utils import to_float
@@ -18,6 +19,7 @@ class BaseMetric_(object):
             self.index = ValueIndex_()
         self.time_idx = time_idx
         self.to_plot = to_plot
+        self.plot_type = 'line'
         self.reset_hooks()
 
     def reset_hooks(self):
@@ -124,6 +126,7 @@ class Accumulator_(BaseMetric_):
     Accumulator.
     Credits to the authors of pytorch/tnt for this.
     """
+
     def __init__(self, name, tag, time_idx, to_plot):
         super(Accumulator_, self).__init__(name, tag, time_idx, to_plot)
         self.reset()
@@ -208,3 +211,55 @@ class DynamicMetric_(BaseMetric_):
 
     def get(self):
         return self._val
+
+
+class BaseMeter_(BaseMetric_):
+    def __init__(self, *args, **kwargs):
+        super(BaseMeter_, self).__init__(*args, **kwargs)
+        self.meter = None
+
+    def reset(self):
+        self.meter.reset()
+
+    def get(self):
+        return self.meter.value()
+
+
+class AverageValueMeter_(BaseMeter_):
+    """
+    Ignore hooks
+    """
+
+    def __init__(self, name, tag, with_std, time_idx, to_plot):
+        super(AverageValueMeter_, self).__init__(name, tag, time_idx, to_plot)
+        self.meter = meter.AverageValueMeter()
+        self.with_std = with_std
+        self.plot_type = 'line+err' if self.with_std else 'line'
+
+    def update(self, val, n=1):
+        self.meter.add(value=val, n=n)
+
+    def get(self):
+        mean, std = self.meter.value()
+        return (mean, std) if self.with_std else mean
+
+
+class ConfusionMeter_(BaseMeter_):
+    """
+    Ignore hooks
+    """
+
+    def __init__(self, name, tag, n_classes, normalized, column_labels, time_idx, to_plot ):
+        super(ConfusionMeter_, self).__init__(name, tag, time_idx, to_plot)
+        self.meter = meter.ConfusionMeter(n_classes, normalized)
+        self.plot_type = 'heatmap'
+        self.column_labels = column_labels if column_labels is not None else list(range(n_classes))
+
+    def update(self, *args, **kwargs):
+        raise NotImplementedError("update isn't implemented for metrics requiring specific params, use add instead")
+
+    def add(self, predicted, target):
+        self.meter.add(predicted=predicted, target=target)
+
+    def get(self):
+        return self.meter.value().tolist()
