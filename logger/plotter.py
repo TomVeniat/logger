@@ -10,7 +10,7 @@ try:
 except ImportError:
     visdom = None
 
-logger = logging.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class Cache(object):
     def __init__(self):
