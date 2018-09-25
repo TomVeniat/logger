@@ -1,5 +1,6 @@
 import numpy as np
 import pprint
+import logging
 
 from collections import defaultdict
 
@@ -9,6 +10,7 @@ try:
 except ImportError:
     visdom = None
 
+logger = logging.get_logger(__name__)
 
 class Cache(object):
     def __init__(self):
@@ -110,6 +112,14 @@ class Plotter(object):
         # clear cache if data has been sent successfully
         if sent:
             cache.clear()
+        else:
+            logger.warning('#####')
+            logger.warning('#####')
+            logger.warning('#####')
+            logger.warning('Problem when plotting tag:{}, name:{}'.format(tag, name))
+            logger.warning('#####')
+            logger.warning('#####')
+            logger.warning('#####')
 
     def plot_config(self, config):
         config = dict((str(k), v) for (k, v) in config.items())
