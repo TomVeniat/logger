@@ -3,13 +3,13 @@ import time
 import json
 import sys
 import fnmatch
-
 from builtins import dict
 from collections import defaultdict, OrderedDict
 
 from .plotter import Plotter
 from .metrics import TimeMetric_, AvgMetric_, SumMetric_, ParentWrapper_,\
     SimpleMetric_, BestMetric_, DynamicMetric_
+
 
 # pickle for python 2 / 3
 if sys.version_info[0] == 2:
@@ -31,6 +31,8 @@ class Experiment(object):
         """
 
         super(Experiment, self).__init__()
+
+        print('####### NEW LOGGER #######')
 
         self.name = name.split('/')[-1]
         self.name_and_dir = name
@@ -169,15 +171,17 @@ class Experiment(object):
             return
 
         metric.index.update(idx)
-        # update logged value of metric
-        setattr(self, metric.name_id(), metric.get())
-        self.logged[metric.name_id()][metric.index.get()] = metric.get()
+
+        new_value = metric.get()
+        setattr(self, metric.name_id(), new_value)
+        self.logged[metric.name_id()][metric.index.get()] = new_value
 
         if self.use_visdom and metric.to_plot:
             self.plotter.plot_metric(metric)
 
         if reset:
             metric.reset()
+
 
     def log_and_reset_metric(self, metric, idx=None):
         self.log_metric(metric, idx)
@@ -215,14 +219,16 @@ class Experiment(object):
     def from_pickle(self, filename):
         with open(filename, 'r') as f:
             my_dict = pickle.load(f)
-            my_dict = _dict_process(my_dict)
-        self.__dict__.update(my_dict)
+        self.load_dict(my_dict)
 
     def from_json(self, filename):
         with open(filename, 'r') as f:
             my_dict = json.load(f, object_pairs_hook=OrderedDict)
-            my_dict = _dict_process(my_dict)
-        self.__dict__.update(my_dict)
+        self.load_dict(my_dict)
+
+    def load_dict(self, dict, key_processor):
+        dict = _dict_process(dict, key_processor)
+        self.__dict__.update(dict)
 
     def to_visdom(self, visdom_opts=None, xlabel=None):
         self.plotter = Plotter(self, visdom_opts, xlabel)
@@ -234,10 +240,13 @@ class Experiment(object):
         self.plotter.plot_xp(self)
 
 
-def _dict_process(my_dict):
+def _dict_process(my_dict, key_processor=None):
     logged = defaultdict(OrderedDict)
     for key in list(my_dict['logged'].keys()):
-        splitted = key.split('_')
+        if key_processor:
+            new_key = key_processor(key)
+
+        splitted = new_key.split('_')
         if not len(splitted):
             splitted.append("default")
         name, tag = '_'.join(splitted[:-1]), splitted[-1]

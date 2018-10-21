@@ -20,9 +20,9 @@ class Cache(object):
         self._x = []
         self._y = []
 
-    def update(self, metric):
-        self._x.append(metric.index.get())
-        self._y.append(metric.get())
+    def update(self, idx, value):
+        self._x.append(idx)
+        self._y.append(value)
 
     @property
     def x(self):
@@ -64,32 +64,38 @@ class Plotter(object):
         """
         tag = None if tag == 'default' else tag
 
-        if name not in list(self.windows.keys()):
-            opts = self.windows_opts[name]
-            if 'xlabel' in opts:
-                pass
-            elif self.xlabel is not None:
-                opts['xlabel'] = self.xlabel
-            else:
-                opts['xlabel'] = 'Time (s)' if time_idx else 'Index'
-
-            # if 'legend' not in opts and tag:
-            #     opts['legend'] = [tag]
-            if 'title' not in opts:
-                opts['title'] = name
-            self.windows[name] = self.viz.line(Y=y, X=x, name=tag, opts=opts)
+        if name in self.windows:
+            # We just want to update the existing window (pane) with the new data points.
+            # todo: Try catch this
+            try:
+                self.viz.line(Y=y, X=x, name=tag, opts=self.windows_opts[name], win=self.windows[name], update='append')
+            except ConnectionError:
+                return False
             return True
+
+        opts = self.windows_opts[name]
+        if 'xlabel' in opts:
+            pass
+        elif self.xlabel is not None:
+            opts['xlabel'] = self.xlabel
         else:
-            return bool(self.viz.line(Y=y, X=x, name=tag,
-                                      opts=self.windows_opts[name],
-                                      win=self.windows[name],
-                                      update='append'))
+            opts['xlabel'] = 'Time (s)' if time_idx else 'Index'
+
+        # if 'legend' not in opts and tag:
+        #     opts['legend'] = [tag]
+        if 'title' not in opts:
+            opts['title'] = name
+        try:
+            self.windows[name] = self.viz.line(Y=y, X=x, name=tag, opts=opts)
+        except ConnectionError:
+            return False
+        return True
 
 
     def plot_xp(self, xp):
 
+        config = xp.config.copy()
         if 'git_diff' in xp.config.keys():
-            config = xp.config.copy()
             config.pop('git_diff')
         self.plot_config(config)
 
@@ -102,12 +108,14 @@ class Plotter(object):
         x = np.array(list(xy.keys())).astype(np.float)
         y = np.array(list(xy.values()))
         time_idx = not np.isclose(x, x.astype(np.int)).all()
-        self._plot_xy(name, tag, x, y, time_idx)
+
+        if not self._plot_xy(name, tag, x, y, time_idx):
+            logger.warning('Failed to Plot {}_{}'.format(name, tag))
 
     def plot_metric(self, metric):
         name, tag = metric.name, metric.tag
         cache = self.cache[metric.name_id()]
-        cache.update(metric)
+        cache.update(metric.index.get(), metric.get())
         sent = self._plot_xy(name, tag, cache.x, cache.y, metric.time_idx)
         # clear cache if data has been sent successfully
         if sent:

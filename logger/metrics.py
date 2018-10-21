@@ -151,6 +151,8 @@ class AvgMetric_(Accumulator_):
         super(AvgMetric_, self).__init__(name, tag, time_idx, to_plot)
 
     def get(self):
+        if self.count == 0:
+            return np.nan
         return self.const + self.acc * 1. / self.count
 
 
