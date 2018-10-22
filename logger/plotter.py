@@ -2,6 +2,8 @@ import numpy as np
 import pprint
 import logging
 
+from scipy import signal
+
 from collections import defaultdict
 
 # optional visdom
@@ -68,6 +70,7 @@ class Plotter(object):
             # We just want to update the existing window (pane) with the new data points.
             # todo: Try catch this
             try:
+                print(1)
                 self.viz.line(Y=y, X=x, name=tag, opts=self.windows_opts[name], win=self.windows[name], update='append')
             except ConnectionError:
                 return False
@@ -83,16 +86,24 @@ class Plotter(object):
 
         # if 'legend' not in opts and tag:
         #     opts['legend'] = [tag]
-        if 'title' not in opts:
-            opts['title'] = name
+        # if 'title' not in opts:
+        #     opts['title'] = name
         try:
-            self.windows[name] = self.viz.line(Y=y, X=x, name=tag, opts=opts)
+            print(2)
+            self.windows_opts[name] = dict(xlabel='Epochs', xtickfont={'size': 15}, showlegend=True,
+                        # legend=['Considered as positive', 'Considered as negative'],
+                        layoutopts={'plotly': {'autosize': True,
+                                               'yaxis': {'automargin': True, 'title': 'FLOPs',
+                                                         'tickfont': {'size': 15}},
+                                               'font': {'family': 'Times New Roman', 'size': 20},
+                                               'legend': {'x': 1, 'y': 1, 'font': {'size': 15}}}})
+            self.windows[name] = self.viz.line(Y=y, X=x, name=tag, opts=self.windows_opts[name])
         except ConnectionError:
             return False
         return True
 
 
-    def plot_xp(self, xp):
+    def plot_xp(self, xp, smooth=False):
 
         config = xp.config.copy()
         if 'git_diff' in xp.config.keys():
@@ -101,12 +112,16 @@ class Plotter(object):
 
         for tag in sorted(xp.logged.keys()):
             for name in sorted(xp.logged[tag].keys()):
-                self.plot_logged(xp.logged, tag, name)
+                print(name)
+                if name in ['test_cost', 'accuracy']:
+                    self.plot_logged(xp.logged, tag, name, smooth)
 
-    def plot_logged(self, logged, tag, name):
+    def plot_logged(self, logged, tag, name, smooth=False):
         xy = logged[tag][name]
         x = np.array(list(xy.keys())).astype(np.float)
         y = np.array(list(xy.values()))
+        if smooth:
+            y = smooth(y)
         time_idx = not np.isclose(x, x.astype(np.int)).all()
 
         if not self._plot_xy(name, tag, x, y, time_idx):
