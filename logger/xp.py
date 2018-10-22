@@ -22,7 +22,7 @@ class Experiment(object):
 
     def __init__(self, name, log_git_hash=True,
                  use_visdom=False, visdom_opts=None,
-                 time_indexing=True, xlabel=None):
+                 time_indexing=True, xlabel=None, smoother=None):
         """ Create an experiment with the following parameters:
         - log_git_hash (bool): retrieve current commit hash to log code status
         - use_visdom (bool): monitor metrics logged on visdom
@@ -47,7 +47,7 @@ class Experiment(object):
         self.time_indexing = time_indexing
 
         if self.use_visdom:
-            self.plotter = Plotter(self, visdom_opts, xlabel)
+            self.plotter = Plotter(self, visdom_opts, xlabel, smoother)
 
         if log_git_hash:
             self.log_git_hash()
@@ -230,14 +230,14 @@ class Experiment(object):
         dict = _dict_process(dict, key_processor)
         self.__dict__.update(dict)
 
-    def to_visdom(self, visdom_opts=None, xlabel=None):
+    def to_visdom(self, visdom_opts=None, xlabel=None, smooth=False):
         self.plotter = Plotter(self, visdom_opts, xlabel)
         # restore visdom options that have been saved (if experiment loaded from file)
         if hasattr(self, 'visdom_win_opts'):
             windows_opts = self.__dict__.pop('visdom_win_opts')
             for (name, opts) in windows_opts.items():
                 self.plotter.set_win_opts(name, opts)
-        self.plotter.plot_xp(self)
+        self.plotter.plot_xp(self, smooth=smooth)
 
 
 def _dict_process(my_dict, key_processor=None):
