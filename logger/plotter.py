@@ -1,5 +1,7 @@
 import logging
 import pprint
+
+
 from collections import defaultdict
 
 import numpy as np
@@ -101,6 +103,7 @@ class Plotter(object):
             # todo: Try catch this
             try:
                 print(1)
+
                 print("########")
                 print(tag)
                 print("########")
@@ -129,6 +132,15 @@ class Plotter(object):
             print(tag)
             print("########")
 
+            print(2)
+            self.windows_opts[name] = dict(xlabel='Epochs', xtickfont={'size': 15}, showlegend=True,
+                        # legend=['Considered as positive', 'Considered as negative'],
+                        layoutopts={'plotly': {'autosize': True,
+                                               'yaxis': {'automargin': True, 'title': 'FLOPs',
+                                                         'tickfont': {'size': 15}},
+                                               'font': {'family': 'Times New Roman', 'size': 20},
+                                               'legend': {'x': 1, 'y': 1, 'font': {'size': 15}}}})
+
             self.windows[name] = self.viz.line(Y=y, X=x, name=tag, opts=self.windows_opts[name])
         except ConnectionError:
             return False
@@ -145,7 +157,6 @@ class Plotter(object):
             for name in sorted(xp.logged[tag].keys()):
                 print(name)
                 if name in ['test_cost', 'accuracy']:
-                # if name in ['accuracy']:
                     self.plot_logged(xp.logged, tag, name, smooth)
 
     def plot_logged(self, logged, tag, name, smooth=False):
