@@ -1,10 +1,8 @@
-import numpy as np
-import pprint
 import logging
-
-from scipy import signal
-
+import pprint
 from collections import defaultdict
+
+import numpy as np
 
 # optional visdom
 try:
@@ -13,6 +11,7 @@ except ImportError:
     visdom = None
 
 logger = logging.getLogger(__name__)
+
 
 class Cache(object):
     def __init__(self):
@@ -70,11 +69,42 @@ class Plotter(object):
         if self.smoother is not None:
             y = self.smoother(y)
 
+        self.windows_opts[name] = dict(xlabel='Epochs', xtickfont={'size': 15}, showlegend=True,
+                                       # legend=['Considered as positive', 'Considered as negative'],
+                                       layoutopts={'plotly': {'autosize': True,
+                                                              'yaxis': {'automargin': True, 'title': 'Accuracy', 'range':[.5,.9],
+                                                                        'tickfont': {'size': 15}},
+                                                              'font': {'family': 'Times New Roman', 'size': 20},
+                                                              'legend': {'x': 1.05, 'y': 1, 'font': {'size': 15},
+                                                                         'tracegroupgap':25},
+
+                                                              'yaxis2':
+                                                                  dict(
+                                                                      title='Accuracy',
+                                                                      range=[0,.9],
+                                                                      overlaying='y',
+                                                                      side='right'
+                                                                  )
+                                                              }},
+                                       # traceopts={
+                                       #     'plotly': {'train': {'yaxis': 'y2', 'legendgroup':'group',
+                                       #                          'line': {'width': '3', 'dash':'line'}},
+                                       #                'validation': {'yaxis': 'y2', 'legendgroup':'group',
+                                       #                          'line': {'width': '3', 'dash':'line'}},
+                                       #                'test': {'yaxis': 'y2', 'legendgroup':'group',
+                                       #                          'line': {'width': '3', 'dash':'line'}},
+                                       #                }}
+                                       )
+        #
         if name in self.windows:
             # We just want to update the existing window (pane) with the new data points.
             # todo: Try catch this
             try:
                 print(1)
+                print("########")
+                print(tag)
+                print("########")
+
                 self.viz.line(Y=y, X=x, name=tag, opts=self.windows_opts[name], win=self.windows[name], update='append')
             except ConnectionError:
                 return False
@@ -93,19 +123,16 @@ class Plotter(object):
         # if 'title' not in opts:
         #     opts['title'] = name
         try:
-            print(2)
-            self.windows_opts[name] = dict(xlabel='Epochs', xtickfont={'size': 15}, showlegend=True,
-                        # legend=['Considered as positive', 'Considered as negative'],
-                        layoutopts={'plotly': {'autosize': True,
-                                               'yaxis': {'automargin': True, 'title': 'Accuracy',
-                                                         'tickfont': {'size': 15}},
-                                               'font': {'family': 'Times New Roman', 'size': 20},
-                                               'legend': {'x': .6, 'y': .1, 'font': {'size': 15}}}})
+
+            yaxis = 'y2'
+            print("########")
+            print(tag)
+            print("########")
+
             self.windows[name] = self.viz.line(Y=y, X=x, name=tag, opts=self.windows_opts[name])
         except ConnectionError:
             return False
         return True
-
 
     def plot_xp(self, xp, smooth=False):
 
@@ -118,6 +145,7 @@ class Plotter(object):
             for name in sorted(xp.logged[tag].keys()):
                 print(name)
                 if name in ['test_cost', 'accuracy']:
+                # if name in ['accuracy']:
                     self.plot_logged(xp.logged, tag, name, smooth)
 
     def plot_logged(self, logged, tag, name, smooth=False):
