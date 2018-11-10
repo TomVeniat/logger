@@ -52,6 +52,8 @@ class Experiment(object):
         if log_git_hash:
             self.log_git_hash()
 
+        self.log_hooks = []
+
     def NewMetric_(self, name, tag, Metric_, time_idx, to_plot, **kwargs):
         if time_idx is None:
             time_idx = self.time_indexing
@@ -176,6 +178,9 @@ class Experiment(object):
         setattr(self, metric.name_id(), new_value)
         self.logged[metric.name_id()][metric.index.get()] = new_value
 
+        for hook in self.log_hooks:
+            hook(metric.name_id(), new_value, metric.index.get())
+
         if self.use_visdom and metric.to_plot:
             self.plotter.plot_metric(metric)
 
@@ -238,6 +243,14 @@ class Experiment(object):
             for (name, opts) in windows_opts.items():
                 self.plotter.set_win_opts(name, opts)
         self.plotter.plot_xp(self)
+
+    def add_log_hook(self, func):
+        """
+        Add a hook to be called when a metric is logged
+        :param func: The function to call.
+        It will be given the three following positional arguments : (metric_name, new_value, new_index)
+        """
+        self.log_hooks.append(func)
 
 
 def _dict_process(my_dict, key_processor=None):
