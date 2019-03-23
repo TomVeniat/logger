@@ -149,7 +149,7 @@ class Experiment(object):
         if to_visdom and self.use_visdom:
             self.plotter.plot_config(config_dict)
 
-    def log_with_tag(self, tag, idx=None, reset=False):
+    def log_with_tag(self, tag, idx=None, reset=False, send=True):
         """ Log metrics from each tag matching the given pattern.
         tag parameter must be in Unix shell-style wildcards format.
         """
@@ -162,9 +162,9 @@ class Experiment(object):
             for metric in self.metrics[match].values():
                 if isinstance(metric, ParentWrapper_):
                     continue
-                self.log_metric(metric, idx, reset)
+                self.log_metric(metric, idx, reset, send)
 
-    def log_metric(self, metric, idx=None, reset=False):
+    def log_metric(self, metric, idx=None, reset=False, send=True):
 
         # log only child metrics
         if isinstance(metric, ParentWrapper_):
@@ -182,7 +182,7 @@ class Experiment(object):
             hook(metric.name_id(), new_value, metric.index.get())
 
         if self.use_visdom and metric.to_plot:
-            self.plotter.plot_metric(metric)
+            self.plotter.plot_metric(metric, send=send)
 
         if reset:
             metric.reset()
