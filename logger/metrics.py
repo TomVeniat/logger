@@ -64,7 +64,7 @@ class SimpleMetric_(BaseMetric_):
         self.reset()
 
     def reset(self):
-        self._val = 0.
+        self._val = float('nan')
 
     def update(self, val, n=None):
         self._val = to_float(val)

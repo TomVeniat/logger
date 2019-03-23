@@ -112,22 +112,24 @@ class Plotter(object):
         if not self._plot_xy(name, tag, x, y, time_idx):
             logger.warning('Failed to Plot {}_{}'.format(name, tag))
 
-    def plot_metric(self, metric):
+    def plot_metric(self, metric, send=True):
         name, tag = metric.name, metric.tag
         cache = self.cache[metric.name_id()]
         cache.update(metric.index.get(), metric.get())
-        sent = self._plot_xy(name, tag, cache.x, cache.y, metric.time_idx)
-        # clear cache if data has been sent successfully
-        if sent:
-            cache.clear()
-        else:
-            logger.warning('#####')
-            logger.warning('#####')
-            logger.warning('#####')
-            logger.warning('Problem when plotting tag:{}, name:{}'.format(tag, name))
-            logger.warning('#####')
-            logger.warning('#####')
-            logger.warning('#####')
+        if send:
+            sent = self._plot_xy(name, tag, cache.x, cache.y, metric.time_idx)
+            
+            # clear cache if data has been sent successfully
+            if sent:
+                cache.clear()
+            else:
+                logger.warning('#####')
+                logger.warning('#####')
+                logger.warning('#####')
+                logger.warning('Problem when plotting tag:{}, name:{}'.format(tag, name))
+                logger.warning('#####')
+                logger.warning('#####')
+                logger.warning('#####')
 
     def plot_config(self, config):
         msg = "<br />".join(["{}: {}".format(str(k), v)
