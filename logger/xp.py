@@ -164,6 +164,13 @@ class Experiment(object):
                     continue
                 self.log_metric(metric, idx, reset, send)
 
+    def log_with_name(self, name, idx=None, reset=False, send=True):
+        for tag, metrics in self.metrics.items():
+            if name in metrics:
+                if isinstance(metrics[name], ParentWrapper_):
+                    continue
+                self.log_metric(metrics[name], idx, reset, send)
+
     def log_metric(self, metric, idx=None, reset=False, send=True):
 
         # log only child metrics
